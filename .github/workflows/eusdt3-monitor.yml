@@ -1,0 +1,36 @@
+name: eUSDt-3 Monitor
+
+on:
+  # 手动启动
+  workflow_dispatch:
+    inputs:
+      threshold:
+        description: "Alert threshold in USDT"
+        required: false
+        default: "10"
+  # 每小时自动重启一次（UTC 时间整点）
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install requests
+      - name: Run monitor (55min loop)
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          VAULT_ADDRESS: 0xE1A62FDcC6666847d5EA752634E45e134B2F824B
+          USDT_TOKEN: 0x9702230A8Ea53601f5Cd2dc00fDBC13d4dF4A8c7
+          POLL_SECONDS: "1"                 # 1秒轮询
+          ALERT_THRESHOLD: ${{ github.event.inputs.threshold || '10' }}
+          ALERT_COOLDOWN: "30"              # 30秒冷却
+          MAX_RUNTIME_SECONDS: "3300"       # ~55 分钟后优雅退出
+        run: python monitor.py
